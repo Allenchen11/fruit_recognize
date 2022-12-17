@@ -12,6 +12,8 @@ from sklearn.neighbors import KNeighborsClassifier
 from skimage import exposure
 from skimage import feature
 from imutils import paths
+import cvzone #pip install cvzone
+from cvzone.SelfiSegmentationModule import SelfiSegmentation #pip install mediapipe
 
 
 startTime = datetime.datetime.now()
@@ -69,6 +71,10 @@ cam = VideoCapture(cam_port)
 
 while(cam.isOpened()):
     result, image = cam.read()
+
+    #remove background
+    segmentor = SelfiSegmentation()
+    image = segmentor.removeBG(image, (255,255,255), threshold=0.99)
     cv2.imshow('frame', image)
     if cv2.waitKey(100) & 0xFF == ord('q'):
         break
