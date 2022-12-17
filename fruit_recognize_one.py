@@ -3,13 +3,13 @@
 # C:\Users\chen\anaconda3\python.exe .\fruit_recognize_one.py --training fruit_image
 #  or    
 # python fruit_recognize_one.py --training fruit_image
-import cv2
+import cv2 #pip install opencv-contrib-python
 import datetime
 import argparse
 import imutils
 from cv2 import (VideoCapture, namedWindow, imshow, waitKey, destroyWindow, imwrite)
-from sklearn.neighbors import KNeighborsClassifier
-from skimage import exposure
+from sklearn.neighbors import KNeighborsClassifier #pip3 install -U scikit-learn scipy matplotlib
+from skimage import exposure #pip install scikit-image
 from skimage import feature
 from imutils import paths
 import cvzone #pip install cvzone
