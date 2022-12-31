@@ -1,8 +1,8 @@
 # USAGE
 # cd D:\python_workspace\fruit_recognize (the dir path of this file) 
-# C:\Users\chen\anaconda3\python.exe .\fruit_recognize_one.py --training fruit_image
+# C:\Users\chen\anaconda3\python.exe .\fruit_recognize_one.py --training fruit_image --test test_image_cam
 #  or    
-# python fruit_recognize_one.py --training fruit_image
+# python fruit_recognize_cam_background.py --training fruit_image --test test_image_cam
 import cv2 #pip install opencv-contrib-python
 import datetime
 import argparse
@@ -15,14 +15,26 @@ from imutils import paths
 import cvzone #pip install cvzone
 from cvzone.SelfiSegmentationModule import SelfiSegmentation #pip install mediapipe
 
+print("[INFO] start use cam catch image...")
+cam_port = 0
+cam = VideoCapture(cam_port)
 
-startTime = datetime.datetime.now()
-print ("[INFO]proccess start at : "+startTime.strftime("%Y-%m-%d %H:%M:%S"))
-
+while(cam.isOpened()):
+    result, image = cam.read()
+    cv2.imshow('frame', image)
+    if cv2.waitKey(100) & 0xFF == ord('q'):
+        break
+# show result
+if result:
+    # saving image in local storage
+    imwrite("./test_image_cam/test.png", image)
+else:
+    print("No image detected. Please! try again")
 
 # construct the argument parse and parse command line arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-d", "--training", required=True, help="Path to the logos training dataset")
+ap.add_argument("-t", "--test", required=True, help="Path to the test dataset")
 args = vars(ap.parse_args())
 
 # initialize the data matrix and labels
@@ -64,42 +76,28 @@ for imagePath in paths.list_images(args["training"]):
 print("[INFO] training classifier...")
 model = KNeighborsClassifier(n_neighbors=1)
 model.fit(data, labels)
+print("[INFO] evaluating...")
 
-print("[INFO] start use cam catch image...")
-cam_port = 0
-cam = VideoCapture(cam_port)
+# loop over the test dataset
+for (i, imagePath) in enumerate(paths.list_images(args["test"])):
+	# load the test image, convert it to grayscale, and resize it to
+	# the canonical size
+	image = cv2.imread(imagePath)
+	gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+	logo = cv2.resize(gray, (200, 100))
 
-while(cam.isOpened()):
-    result, image = cam.read()
-    cv2.imshow('frame', image)
-    if cv2.waitKey(100) & 0xFF == ord('q'):
-        break
-# show result
-if result:
-    # saving image in local storage
-    imwrite("./test_image/test.png", image)
-else:
-    print("No image detected. Please! try again")
+	# extract Histogram of Oriented Gradients from the test image and
+	# predict the make of the car
+	(H, hogImage) = feature.hog(logo,orientations=9,pixels_per_cell=(10,10),cells_per_block=(2,2),transform_sqrt=True,block_norm="L1",visualize=True)
+	pred = model.predict(H.reshape(1, -1))[0]
 
+	# visualize the HOG image
+	hogImage = exposure.rescale_intensity(hogImage, out_range=(0, 255))
+	hogImage = hogImage.astype("uint8")
+	cv2.imshow("HOG Image #{}".format(i + 1), hogImage)
 
-
-imagePath = 'test_image/test.png'
-image = cv2.imread(imagePath)
-gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-logo = cv2.resize(gray, (200, 100))
-
-(H, hogImage) = feature.hog(logo,orientations=9,pixels_per_cell=(10,10),cells_per_block=(2,2),transform_sqrt=True,block_norm="L1",visualize=True)
-pred = model.predict(H.reshape(1, -1))[0]
-
-hogImage = exposure.rescale_intensity(hogImage, out_range=(0, 255))
-hogImage = hogImage.astype("uint8")
-cv2.imshow("Test Image", hogImage)
-
-cv2.putText(image, pred.title(), (10, 35), cv2.FONT_HERSHEY_SIMPLEX, 1.0,
+	# draw the prediction on the test image and display it
+	cv2.putText(image, pred.title(), (10, 35), cv2.FONT_HERSHEY_SIMPLEX, 1.0,
 		(0, 255, 0), 3)
-cv2.imshow("Test Image", image)
-cv2.waitKey(0)
-
-
-endTime = datetime.datetime.now()
-print ("[INFO]proccess end at : "+endTime.strftime("%Y-%m-%d %H:%M:%S"))
+	cv2.imshow("Test Image #{}".format(i + 1), image)
+	cv2.waitKey(0)

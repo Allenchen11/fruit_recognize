@@ -2,7 +2,7 @@
 # cd D:\python_workspace\fruit_recognize (the dir path of this file) 
 # C:\Users\chen\anaconda3\python.exe .\imageFromWebcam.py --training fruit_image --test test_image  
 #  or    
-# python fruit_recognize.py --training fruit_image --test test_image
+# python fruit_recognize_picture.py --training fruit_image --test test_image
 import cv2
 import datetime
 import argparse
@@ -15,9 +15,6 @@ from imutils import paths
 import cvzone #pip install cvzone
 from cvzone.SelfiSegmentationModule import SelfiSegmentation #pip install mediapipe
 
-
-startTime = datetime.datetime.now()
-print ("[INFO]proccess start at : "+startTime.strftime("%Y-%m-%d %H:%M:%S"))
 
 
 # construct the argument parse and parse command line arguments
@@ -65,33 +62,14 @@ for imagePath in paths.list_images(args["training"]):
 print("[INFO] training classifier...")
 model = KNeighborsClassifier(n_neighbors=1)
 model.fit(data, labels)
-
-print("[INFO] start use cam catch image...")
-cam_port = 0
-cam = VideoCapture(cam_port)
-
-while(cam.isOpened()):
-    result, image = cam.read()
-	#remove background
-    segmentor = SelfiSegmentation()
-    image = segmentor.removeBG(image, (255,255,255), threshold=0.99)
-    cv2.imshow('frame', image)
-    if cv2.waitKey(100) & 0xFF == ord('q'):
-        break
-# show result
-if result:
-    # saving image in local storage
-    imwrite("./test_image/test.png", image)
-else:
-    print("No image detected. Please! try again")
-
+print("[INFO] evaluating...")
 
 # loop over the test dataset
 for (i, imagePath) in enumerate(paths.list_images(args["test"])):
 	# load the test image, convert it to grayscale, and resize it to
-	print(imagePath)
 	# the canonical size
 	image = cv2.imread(imagePath)
+	gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 	logo = cv2.resize(gray, (200, 100))
 
 	# extract Histogram of Oriented Gradients from the test image and
@@ -109,7 +87,3 @@ for (i, imagePath) in enumerate(paths.list_images(args["test"])):
 		(0, 255, 0), 3)
 	cv2.imshow("Test Image #{}".format(i + 1), image)
 	cv2.waitKey(0)
-
-
-endTime = datetime.datetime.now()
-print ("[INFO]proccess end at : "+endTime.strftime("%Y-%m-%d %H:%M:%S"))
